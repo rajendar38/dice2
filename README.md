@@ -22,7 +22,7 @@ This Python project automates job searches and easy applications on [Dice.com](h
 1. **Clone this repo**
 
    ```bash
-   git clone https://github.com/<your-username>/scrapeandapply.git
+   git clone https://github.com/KrishnaYalamarthi/Dice-Automation.git
    cd scrapeandapply
    ```
 
@@ -62,3 +62,4 @@ Do not spam or violate site terms of service. Always review and update your appl
 ## 📄 License
 
 MIT License © 2025 Krishna Yalamarthi
+
