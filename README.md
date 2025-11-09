@@ -55,11 +55,18 @@ Do not spam or violate site terms of service. Always review and update your appl
 
 ## 🧠 Future Enhancements
 
-* Integrate proxy rotation and retry logic
-* Add job category filters and auto-email summaries
-* Extend support for other platforms (LinkedIn, Indeed, etc.)
+•	Integrate AI to analyze each job posting and extract key skill requirements.
+
+•	Automatically tailor application content using your existing resume data.
+
+•	Optimize keyword alignment to improve ATS (Applicant Tracking System) scores.
+
+•	Preserve original resume formatting while dynamically customizing content.
+
+•	Provide real-time feedback on resume-job match quality before submission.
 
 ## 📄 License
 
 MIT License © 2025 Krishna Yalamarthi
+
 
