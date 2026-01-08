@@ -15,17 +15,19 @@ from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright, Page, TimeoutError as PWTimeoutError
 import time
 import random
+from playwright.sync_api import Page, TimeoutError as PWTimeoutError
 
 # ------------ Search configuration ------------
 BASE_URL = (
     "https://www.dice.com/jobs"
-    "?filters.postedDate=TWO"
-    "&filters.employmentType=CONTRACTS%7CTHIRD_PARTY"
-    "&radius=30"
+    "?filters.postedDate=THIRTY"
+    #"&filters.employmentType=CONTRACTS%7CTHIRD_PARTY"
+    #"&radius=30"
     "&countryCode=US"
     "&language=en"
-    "&q=AI%2FML"
-    "&radiusUnit=mi"
+    #"&q=devops%2CSE"
+    "&q=devops"
+    #"&State&adminDistrictCode=TX"
     "&page="
 )
 # 💡 Tip: Modify this BASE_URL to match your search preferences —
@@ -43,9 +45,9 @@ HEADERS = {
 DICE_LOGIN_URL = "https://www.dice.com/dashboard/login"
 
 # ⚠️ Replace these placeholders with your own credentials before running
-USERNAME = "your_email@example.com"
-PASSWORD = "your_secure_password"
-LOCAL_RESUME = "path/to/your_resume.docx"
+USERNAME = "rajendar.talatam@gmail.com"
+PASSWORD = "@Oracle38"
+LOCAL_RESUME = "Rajendar_Talatam _Resume.docx"
 
 # Wait time (in seconds) between job applications to mimic human behavior
 PER_JOB_WAIT_SECONDS = 3
@@ -152,32 +154,35 @@ def login(page: Page):
     print("Logged in successfully.")
 
 
+
 def has_easy_apply(page: Page) -> bool:
-    """Check whether a job listing supports 'Easy Apply'."""
+    """Check whether a job listing supports 'Easy Apply' on Dice."""
     try:
-        page.wait_for_selector("apply-button-wc", timeout=30_000)
+        # ✅ NEW Dice layout (anchor tag)
+        time.sleep(3)
+        # ...existing code...
+        easy_link = page.locator(
+            "a[data-testid='apply-button']",
+            has_text="Easy Apply"
+        )
+        # Also consider "Apply" button
+        apply_link = page.locator(
+            "a[data-testid='apply-button']",
+            has_text="Apply"
+        )
+        if (easy_link.count() > 0 and easy_link.first.is_visible()) or \
+           (apply_link.count() > 0 and apply_link.first.is_visible()):
+            return True
     except PWTimeoutError:
         return False
-
-    # Give web component time to load
-    page.wait_for_timeout(1000)
-
-    host = page.locator("apply-button-wc")
-    easy = host.locator("button.btn-primary", has_text="Easy apply")
-    if easy.count() > 0 and easy.first.is_visible():
-        return True
-
-    # fallback: any apply button inside the host
-    fallback = host.locator("button.btn-primary")
-    for i in range(min(3, fallback.count())):
-        try:
-            t = fallback.nth(i).inner_text(timeout=1000).lower()
-            if "apply" in t:
-                return True
-        except Exception:
-            pass
+    except Exception:
+        return False
     return False
-
+def click_when_enabled(page, text, timeout=30_000):
+    btn = page.locator(f'button:has-text("{text}")')
+    btn.wait_for(state="visible", timeout=timeout)
+    btn.wait_for(state="enabled", timeout=timeout)
+    btn.first.click()
 
 def easy_apply_on_job(page: Page, job_url: str) -> bool:
     """Open a job link and complete the Easy Apply process if available."""
@@ -187,43 +192,53 @@ def easy_apply_on_job(page: Page, job_url: str) -> bool:
             print("  Skipping (no Easy apply):", job_url)
             return False
 
-        host = page.locator("apply-button-wc")
-        easy_btn = host.locator("button.btn-primary", has_text="Easy apply")
-        if easy_btn.count() == 0:
-            easy_btn = host.locator("button.btn-primary").first
-
         print("  Clicking Easy apply on:", job_url)
-        easy_btn.click()
 
-        # Replace resume
-        page.wait_for_selector('button.file-remove', timeout=10_000)
-        page.click('button.file-remove:has-text("Replace")')
-        page.wait_for_selector('input#fsp-fileUpload', timeout=10_000)
-        page.set_input_files('input#fsp-fileUpload', LOCAL_RESUME)
-        page.wait_for_timeout(1200)
+        easy_apply = page.locator(
+            "a[data-testid='apply-button']",
+            has_text="Easy Apply"
+        )
+        easy_apply = page.locator(
+            "a[data-testid='apply-button']",
+            has_text="Apply"
+        )
 
-        # Upload the file
-        page.wait_for_selector('span[data-e2e="upload"]', timeout=10_000)
-        page.click('span[data-e2e="upload"]')
-        page.wait_for_timeout(1200)
+        easy_apply.wait_for(state="visible", timeout=30_000)
+        easy_apply.click()
+
+        # # Replace resume
+        # page.wait_for_selector('button.file-remove', timeout=10_000)
+        # page.click('button.file-remove:has-text("Replace")')
+        # page.wait_for_selector('input#fsp-fileUpload', timeout=10_000)
+        # page.set_input_files('input#fsp-fileUpload', LOCAL_RESUME)
+        # page.wait_for_timeout(1200)
+
+        # # Upload the file
+        # page.wait_for_selector('span[data-e2e="upload"]', timeout=10_000)
+        # page.click('span[data-e2e="upload"]')
+        # page.wait_for_timeout(1200)
 
         # Navigate through steps until submission
-        for _ in range(6):
-            submit_btn = page.locator('button.btn-next:has-text("Submit")')
-            if submit_btn.is_visible():
-                submit_btn.click()
-                page.wait_for_timeout(1200)
+        for _ in range(8):  # Dice usually 3–6 steps
+            # ✅ Submit (final step)
+            time.sleep(3)
+            submit_btn = page.locator('button:has-text("Submit")')
+            if submit_btn.count() > 0 and submit_btn.first.is_visible():
+                submit_btn.first.click()
+                page.wait_for_timeout(1500)
                 print("  Submitted ✔")
                 return True
-            next_btn = page.locator('button.btn-next')
-            if next_btn.is_visible():
-                next_btn.click()
-                page.wait_for_timeout(1000)
-            else:
-                break
 
-        print("  Could not reach Submit step; skipping.")
-        return False
+            # ➡️ Next step
+            next_btn = page.locator('button:has-text("Next")')
+            if next_btn.count() > 0 and next_btn.first.is_visible():
+                next_btn.first.click()
+                page.wait_for_timeout(1200)
+                continue
+
+            # 🛑 Nothing actionable
+            break
+
 
     except PWTimeoutError as te:
         print("  Timeout:", te)
